@@ -928,6 +928,14 @@ MonoBehaviour:
   - {fileID: 2935172703229220812, guid: cd7595d9235523745bec53609a88585e, type: 3}
   - {fileID: 2313878630855284524, guid: 9d5ae5a53c422994aa9e7f1d308edb21, type: 3}
   - {fileID: 6137981640630521630, guid: 76172a680ebc62745a8a193aa5d42146, type: 3}
+  yellowShapePrefabs:
+  - {fileID: 2935172703229220812, guid: d922daad034277b4993a82db986f53e8, type: 3}
+  - {fileID: 2313878630855284524, guid: 78450c2831a9ef94392239ba4717ae54, type: 3}
+  - {fileID: 6137981640630521630, guid: d2397974915ea8b47a08d399be4d6dc7, type: 3}
+  yellowStartScore: 3
+  startingYellowChance: 0.2
+  yellowChanceIncreasePerPoint: 0.02
+  maximumYellowChance: 0.65
   scoreText: {fileID: 132889466}
   gameOverText: {fileID: 1198590946}
   spawnY: 5.7

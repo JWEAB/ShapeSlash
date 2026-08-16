@@ -134,7 +134,10 @@ public class SwipeController : MonoBehaviour
         edgeCollider.isTrigger = true;
 
         // Add our persistent slash behavior.
-        currentSlash.AddComponent<SlashLine>();
+        SlashLine slashLine =
+            currentSlash.AddComponent<SlashLine>();
+
+        slashLine.Initialize(this);
 
         Vector2 worldPosition =
             ScreenToWorld(screenPosition);
@@ -221,37 +224,32 @@ public class SwipeController : MonoBehaviour
             if (shape == null)
                 continue;
 
-            Vector2 direction = GetRecentDrawingDirection();
-
-            bool segmentIsHorizontal =
-                Mathf.Abs(direction.x) >
-                Mathf.Abs(direction.y) * 1.25f;
-
-            // WHITE SHAPE:
-            // The exact section touching the object
-            // must be horizontal.
-            if (segmentIsHorizontal)
-            {
-                Vector2 cutDirection =
-                    direction.normalized;
-
-                ShapeSlicer slicer =
-                    shape.GetComponent<ShapeSlicer>();
-
-                if (slicer != null)
-                {
-                    slicer.Slice(
-                        hit.point,
-                        cutDirection
-                    );
-                }
-
-                SuccessfulHit(shape);
-            }
-            else
+            if (shape.behavior == ShapeBehavior.YellowCatch)
             {
                 GameManager.Instance.GameOver();
+                return;
+            }    
+
+            Vector2 cutDirection =
+                (end - start).normalized;
+
+            if (cutDirection == Vector2.zero)
+                return;
+
+            ShapeSlicer slicer =
+                shape.GetComponent<ShapeSlicer>();
+
+            if (slicer != null)
+            {
+                slicer.Slice(
+                    hit.point,
+                    cutDirection
+                );
             }
+
+            SuccessfulHit(shape);
+
+            return;
         }
     }
 
@@ -296,6 +294,14 @@ public class SwipeController : MonoBehaviour
         }
 
         // Keep the finished drawing on the screen.
+        SlashLine slashLine =
+            currentSlash.GetComponent<SlashLine>();
+
+        if (slashLine != null)
+        {
+            slashLine.FinishDrawing();
+        }
+
         GameManager.Instance.RegisterSlash(
             currentSlash
         );
@@ -365,5 +371,76 @@ public class SwipeController : MonoBehaviour
         }
 
         return newestPoint - oldestPoint;
+    }
+
+    public void CutShapeFromExistingLine(
+        FallingShape shape,
+        SlashLine slashLine)
+    {
+        if (shape == null)
+            return;
+
+        if (shape != GameManager.Instance.CurrentShape)
+            return;
+
+        Vector2 cutPoint;
+        Vector2 cutDirection;
+
+        bool foundCut =
+            slashLine.GetClosestCut(
+                shape.transform.position,
+                out cutPoint,
+                out cutDirection
+            );
+
+        if (!foundCut)
+            return;
+
+        ShapeSlicer slicer =
+            shape.GetComponent<ShapeSlicer>();
+
+        if (slicer != null)
+        {
+            slicer.Slice(
+                cutPoint,
+                cutDirection
+            );
+        }
+
+        SuccessfulHit(shape);
+    }
+
+    public void CatchYellowShape(
+        FallingShape shape,
+        GameObject slashObject)
+    {
+        if (shape == null)
+            return;
+
+        if (shape !=
+            GameManager.Instance.CurrentShape)
+        {
+            return;
+        }
+
+        // If this is the line we're currently
+        // drawing, stop drawing it.
+        if (currentSlash == slashObject)
+        {
+            isDrawing = false;
+
+            Destroy(currentSlash);
+
+            currentSlash = null;
+
+            points.Clear();
+
+            lineRenderer = null;
+            edgeCollider = null;
+        }
+
+        GameManager.Instance.SuccessfulCatch(
+            shape
+        );
     }
 }

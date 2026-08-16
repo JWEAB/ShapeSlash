@@ -7,6 +7,19 @@ public class GameManager : MonoBehaviour
 
     [Header("Shape Spawning")]
     public GameObject[] whiteShapePrefabs;
+    public GameObject[] yellowShapePrefabs;
+
+    [Header("Yellow Spawning")]
+
+    public int yellowStartScore = 3;
+
+    [Range(0f, 1f)]
+    public float startingYellowChance = 0.30f;
+
+    public float yellowChanceIncreasePerPoint = 0.02f;
+
+    [Range(0f, 1f)]
+    public float maximumYellowChance = 0.65f;
     // Score Variables //
     public TMP_Text scoreText;
     public TMP_Text gameOverText;
@@ -18,7 +31,7 @@ public class GameManager : MonoBehaviour
     public float startingFallSpeed = 3.5f;
     public float speedIncreasePerPoint = 0.2f;
     public float maximumFallSpeed = 8f;
-    public float spawnDelay = 0.4f;
+    public float spawnDelay = 0.15f;
 
     public int Score { get; private set; }
 
@@ -65,39 +78,87 @@ public class GameManager : MonoBehaviour
     }
 
     private void SpawnShape()
-    {
-        if (IsGameOver)
-            return;
+{
+    if (IsGameOver)
+        return;
 
-        float randomX = Random.Range(minimumSpawnX, maximumSpawnX);
+    float randomX =
+        Random.Range(
+            minimumSpawnX,
+            maximumSpawnX
+        );
 
-        Vector3 spawnPosition = new Vector3(
+    Vector3 spawnPosition =
+        new Vector3(
             randomX,
             spawnY,
             0f
         );
 
+    // White by default.
+    GameObject[] shapePool =
+            whiteShapePrefabs;
+
+        // After 3 successful shapes,
+        // yellow can start appearing.
+        if (
+            Score >= yellowStartScore &&
+            yellowShapePrefabs != null &&
+            yellowShapePrefabs.Length > 0
+        )
+        {
+            float yellowChance =
+                startingYellowChance +
+                (
+                    (Score - yellowStartScore) *
+                    yellowChanceIncreasePerPoint
+                );
+
+            yellowChance =
+                Mathf.Min(
+                    yellowChance,
+                    maximumYellowChance
+                );
+
+            if (Random.value < yellowChance)
+            {
+                shapePool =
+                    yellowShapePrefabs;
+            }
+        }
+
         int randomShapeIndex =
-            Random.Range(0, whiteShapePrefabs.Length);
+            Random.Range(
+                0,
+                shapePool.Length
+            );
 
         GameObject selectedShape =
-            whiteShapePrefabs[randomShapeIndex];
+            shapePool[randomShapeIndex];
 
-        GameObject newShape = Instantiate(
-            selectedShape,
-            spawnPosition,
-            Quaternion.identity
-        );
+        GameObject newShape =
+            Instantiate(
+                selectedShape,
+                spawnPosition,
+                Quaternion.identity
+            );
 
-        CurrentShape = newShape.GetComponent<FallingShape>();
+        CurrentShape =
+            newShape.GetComponent<FallingShape>();
 
         float currentFallSpeed =
-            startingFallSpeed + (Score * speedIncreasePerPoint);
+            startingFallSpeed +
+            (Score * speedIncreasePerPoint);
 
         currentFallSpeed =
-            Mathf.Min(currentFallSpeed, maximumFallSpeed);
+            Mathf.Min(
+                currentFallSpeed,
+                maximumFallSpeed
+            );
 
-        CurrentShape.SetFallSpeed(currentFallSpeed);
+        CurrentShape.SetFallSpeed(
+            currentFallSpeed
+        );
     }
 
     public bool CanDraw()
@@ -110,6 +171,32 @@ public class GameManager : MonoBehaviour
     public void RegisterSlash(GameObject slash)
     {
         CurrentSlash = slash;
+    }
+
+    public void SuccessfulCatch(FallingShape shape)
+    {
+        if (IsGameOver)
+            return;
+
+        if (shape != CurrentShape)
+            return;
+
+        Score++;
+        UpdateScoreText();
+
+        Debug.Log("Yellow caught! Score: " + Score);
+
+        Destroy(CurrentShape.gameObject);
+
+        if (CurrentSlash != null)
+        {
+            Destroy(CurrentSlash);
+        }
+
+        CurrentShape = null;
+        CurrentSlash = null;
+
+        Invoke(nameof(SpawnShape), spawnDelay);
     }
 
     public void SuccessfulCut(FallingShape shape)
@@ -161,7 +248,7 @@ public class GameManager : MonoBehaviour
     private void RestartGame()
     {
         SwipeController swipeController =
-            FindFirstObjectByType<SwipeController>();
+            FindAnyObjectByType<SwipeController>();
 
         if (swipeController != null)
         {

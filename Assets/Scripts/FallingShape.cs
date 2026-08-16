@@ -1,9 +1,16 @@
 using UnityEngine;
 
+public enum ShapeBehavior
+{
+    WhiteCut,
+    YellowCatch
+}
+
 public class FallingShape : MonoBehaviour
 {
     private Rigidbody2D rb;
     private float fallSpeed = 2f;
+    public ShapeBehavior behavior = ShapeBehavior.WhiteCut;
 
     private void Awake()
     {
